@@ -10,8 +10,8 @@ This file is the main
 ************************************************/
 
 #include <iostream>
-#include "pass2.cpp"
-
+#include "pass2.h"
+#include "pass1.h"
 using namespace std;
 
 int main(int argc, char* argv[]){
