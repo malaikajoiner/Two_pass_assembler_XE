@@ -1,0 +1,12 @@
+.  SOURCE CODE FOR THE XE VERSION OF THE SIC FAMILY OF COMPUTER
+.  This tests NOBASE, indirect addressing (ex: @VALUE), format 1 (ex: FIX)
+TEST2    START   0
+         LDB    #TABLE
+         BASE    TABLE
+         LDA     @VALUE
+         NOBASE
+         FIX
+         RSUB
+VALUE    WORD    5
+TABLE    RESW    1
+         END     TEST2

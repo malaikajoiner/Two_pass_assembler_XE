@@ -1,3 +1,14 @@
+/************************************************
+File: README.md
+Assignment: Assignment 2, SIC/XE 2 pass assembler
+Class: CS530, Spring 2026
+Malaika Joiner cssc2527
+Ryoka Kobayashi cssc2530
+
+File Description: 
+This file is the main 
+************************************************/
+
 #include <iostream>
 #include "pass2.cpp"
 #include "pass2.h"

@@ -1,0 +1,17 @@
+.  SOURCE CODE FOR THE XE VERSION OF THE SIC FAMILY OF COMPUTER
+.  This tests label usage (ex: MOVECH), index addressing (ex: STR1, X), immediate addressing (ex: #11) BYTE, RESB, WORD, format 2 (ex: TIXR)
+TEST3     START   0
+          LDT     ELEVEN
+          LDX    #0
+MOVECH    LDCH    STR1, X
+          STCH    STR2, X
+          TIXR    T
+          JLT     MOVECH
+          RSUB
+
+STR1      BYTE    C'TEST STRING'
+STR2      RESB    11
+ELEVEN    WORD    11
+          END     TEST3
+
+

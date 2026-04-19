@@ -3,7 +3,7 @@
 # Assignment: Assignment 2, SIC/XE 2 pass assembler
 # Class: CS530, Spring 2026
 # Malaika Joiner cssc2527
-# Ryoka Kobayashi cssc####????
+# Ryoka Kobayashi cssc2530
 
 # File Description: 
 # This is the Makefile used to compile the program
