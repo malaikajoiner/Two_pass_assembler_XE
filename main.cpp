@@ -11,11 +11,8 @@ This file is the main
 
 #include <iostream>
 #include "pass2.cpp"
-#include "pass2.h"
+
 using namespace std;
-
-
-void pass1(string filename);
 
 int main(int argc, char* argv[]){
     if (argc <= 1){cout << "no file" << endl; return 0;}
