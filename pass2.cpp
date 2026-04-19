@@ -8,3 +8,7 @@ Ryoka Kobayashi cssc####????
 File Description: 
 This file is
 ************************************************/
+
+#include "pass2.h"
+
+void pass2(string filename){}

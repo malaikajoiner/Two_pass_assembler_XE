@@ -8,3 +8,23 @@ Ryoka Kobayashi cssc####????
 File Description: 
 This file declares the functions and constants used in pass2.cpp
 ************************************************/
+
+#include <fstream>
+#include <iostream>
+#include <string>
+using namespace std;
+
+ifstream IF;                    //reads intermediate file 
+ofstream LF, SYMTAB;            //creates output files (Listing file and Symbol Table)
+
+string str;                     //string for writing
+
+void pass2(string filename){}   //main function for calling pass 2 from main.cpp
+
+
+
+
+
+
+
+
