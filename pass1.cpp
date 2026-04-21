@@ -1,5 +1,14 @@
-#include <map>
-#include <vector>
+/************************************************
+File: pass1.cpp
+Assignment: Assignment 2, SIC/XE 2 pass assembler
+Class: CS530, Spring 2026
+Malaika Joiner cssc2527
+Ryoka Kobayashi cssc2530
+
+File Description:
+This file is the pass 1 cpp file
+************************************************/
+#include "pass1.h"
 #include <sstream>
 #include <fstream>
 #include <iostream>
@@ -43,13 +52,6 @@ bool isInstruction(string opcode) {
         return true;
     return false;
 }
-
-struct LineInfo {
-    int address;
-    string label;
-    string opcode;
-    string operand;
-};
 
 void pass1(string filename) {
     ifstream file; // "file reader" used to read file
