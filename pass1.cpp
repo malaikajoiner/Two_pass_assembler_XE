@@ -59,6 +59,9 @@ void pass1(string filename) {
     string stFile = filename.substr(0, filename.length() - 4) + ".st"; // -4 => delete .sic from the file name
     ofstream outFile(stFile);
 
+    //intermediate file for teammate
+    ofstream intermediate("intermediate.txt");
+
     if (!outFile) {
         cout << "Unable to open file for SYMTAB" << endl;
         return;
@@ -100,6 +103,13 @@ void pass1(string filename) {
             info.opcode = literal;
             info.operand = "";
             lines.push_back(info);
+
+            intermediate << hex << uppercase << info.address << " "
+                         << info.label << " "
+                         << info.opcode << " "
+                         << info.operand << endl;
+            intermediate << dec;
+
             continue;
         }
 
@@ -179,14 +189,29 @@ void pass1(string filename) {
         info.operand = operand;
         lines.push_back(info);
 
-/*
-    test(address, label, opcode, operand)
+        // write intermediate line
+        if (intermediate.is_open()) {
+            string labelOut = info.label.empty() ? "-" : info.label;
+
+            intermediate << hex << uppercase<< info.address << " "
+                         << labelOut << " "
+                         << info.opcode << " "
+                         << info.operand << endl;
+            intermediate << dec;
+        }
+
+        /*
+        test(address, label, opcode, operand)
         cout << "address: " << currentAddress
              << ", label: " << label
              << ", opcode: " << opcode
              << ", operand: " << operand << endl;
-*/
+        */
+
     }
+
+    intermediate.close();
+    
 
 // length
     int programLength = locctr - startAddress;
