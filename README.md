@@ -17,9 +17,9 @@ Files Included:
 - pass1.cpp
 - pass2.h
 - pass2.cpp
-- main.sic
-- calc.sic
-- io.sic
+- test1.sic
+- test2.sic
+- test3.sic
 
 Compile Instructions:
 Run 'make' to compile the program and generate the lxe executable file.
@@ -40,8 +40,6 @@ Supported Assembler Directives:
 - RESW
 - BASE
 - NOBASE
-- LTORG(?)
-- USE(?)
 
 Known Deficiencies:
 This project does not yet support the use of EQU or ORG assembler directives.

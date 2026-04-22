@@ -16,6 +16,8 @@ This file declares the functions and constants used in pass1.cpp
 #include <string>
 #include <vector>
 #include <map>
+#include <ios>
+#include <iomanip>
 
 using namespace std;
 

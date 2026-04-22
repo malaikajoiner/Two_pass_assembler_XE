@@ -60,8 +60,8 @@ void pass1(string filename) {
     string stFile = filename.substr(0, filename.length() - 4) + ".st"; // -4 => delete .sic from the file name
     ofstream outFile(stFile);
 
-    // intermediate file for teammate
-    ofstream intermediate("intermediate.txt");
+    // intermediate file
+    ofstream intermediate(filename + "_intermediate_file");
 
     if (!outFile) {
         cout << "Unable to open file for SYMTAB" << endl;
@@ -148,7 +148,7 @@ void pass1(string filename) {
                 } else if (!operand.empty() && operand[0] == 'X') {
                     locctr += (operand.length() - 3) / 2;
                 }
-            } else if (opcode == "BASE" || opcode == "END") {
+            } else if (opcode == "BASE" || opcode == "NOBASE" || opcode == "END") {
                 locctr += 0;
             } else if (isFormat1(opcode)) {
                 locctr += 1;
@@ -221,25 +221,25 @@ void pass1(string filename) {
     outFile << "Csect   Symbol   Value   LENGTH   Flags:\n";
     outFile << "----------------------------------------\n";
 
-    // control section line (you can just use PROG)
-    outFile << left << setw(8) << "PROG"
-            << setw(8) << ""
-            << uppercase << hex << setw(6) << setfill('0') << startAddress
-            << " "
-            << setw(6) << setfill('0') << programLength
-            << setfill(' ')
-            << "\n";
+    // control section line
+        outFile << left << setw(8) << "PROG"
+        << setw(8) << ""
+        << right << uppercase << hex << setw(6) << setfill('0') << startAddress
+        << " "
+        << setw(6) << programLength
+        << setfill(' ')
+        << "\n";
 
     // symbol rows
-    for (auto &pair : SYMTAB) {
-        outFile << left << setw(8) << ""
-                << setw(8) << pair.first
-                << uppercase << hex << setw(6) << setfill('0') << pair.second
-                << setfill(' ')
-                << "      \n";
-    }
+    for (auto &entry : SYMTAB) {
+    outFile << left << setw(8) << ""
+            << setw(8) << entry.first
+            << right << uppercase << hex << setw(6) << setfill('0') << entry.second
+            << setfill(' ') << dec
+            << "      \n";
+}
 
-    /*    cout << "SYMTAB:" << endl;
+    /*    cout << "SYMTAB:" << endl;z
         for (auto &pair : SYMTAB) {
             cout << pair.first << " -> " << pair.second << endl; }*/
 }

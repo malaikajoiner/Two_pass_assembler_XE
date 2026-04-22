@@ -10,6 +10,7 @@ This file is the pass 2 cpp file
 ************************************************/
 
 #include "pass2.h"
+#include "pass1.h"
 
 map<string, int> SYMTAB;
 
@@ -20,11 +21,12 @@ int baseAddress = 0;
 
 string str_line, str_read, objectCode, curr_record, MR, base, label, operand, opcode, comment, operand1, operand2;;
 bool nobase;
-int TR_len, block, lineNumber, address, startAddress;
+int TR_len, block, address, startAddress, lineNumber;
 bool isComment;
 
+//This function is called by main.cpp and it conducts pass 2. First opens intermidiate file and symbol table to create object code.
 void pass2(string filename){
-    size_t dot = filename.find_last_of('.');
+    size_t dot = filename.find_last_of('.');            //remove extention names
 
     if(dot == string::npos){
         base = filename;
@@ -51,10 +53,11 @@ void pass2(string filename){
     write(LF, ".  SOURCE CODE FOR THE XE VERSION OF THE SIC FAMILY OF COMPUTER", true);
 
     int listingline = 1;
-    while(read_IF(IF, isComment, lineNumber, address, block, label, opcode, operand, comment)){
+    while(read_IF(IF, isComment, lineNumber, address, block, label, opcode, operand, comment)){     //reads one line at a time of intermidiate file
+                                                                                                    //stops when reaches end of file and no more lines left
         string obj = "";
 
-        if (isComment) {
+        if (isComment) { //for comments, only copy comment down, no object code
             writeL(LF, -1, -1, "", "", "", "", comment, true);
             continue;
         }
@@ -79,7 +82,7 @@ void pass2(string filename){
             obj = IS_Instruction(opcode, operand, address);
         }
 
-        writeL(LF, lineNumber, address, label, opcode, operand, obj, comment, false);
+        writeL(LF, lineNumber, address, label, opcode, operand, obj, comment, false);   //writes listing file based on opcodes given
         listingline++;
     }
 
@@ -87,9 +90,10 @@ void pass2(string filename){
     LF.close();
 };
 
+//int to hex conversion
 string toHex(int value, int width) {
     stringstream ss;
-    ss << uppercase << hex << setw(width) << setfill('0') << value;
+    ss << uppercase << hex << setw(width) << setfill('0') << value; //sets leading zeros
     return ss.str();
 }
 
@@ -107,6 +111,7 @@ string read_section(const string& section, int& index){                 //reads 
     return str_read;
 }
 
+//This function writes text to output files. 
 void write(ofstream& filename, string text, bool nextLine){             //nextLine determines if next text begins on a new line.     
     if(nextLine){
         filename<<text<<endl;       
@@ -115,6 +120,7 @@ void write(ofstream& filename, string text, bool nextLine){             //nextLi
     }
 }
 
+//reads intermidiate file
 bool read_IF(ifstream& filename, bool& isComment, int& lineNumber, int& address, int& block, string& label, string& opcode, string& operand, string& comment){
     string line = "";
     int index = 0;
@@ -131,24 +137,25 @@ bool read_IF(ifstream& filename, bool& isComment, int& lineNumber, int& address,
         index++;
     }
 
+    //detectes if line is a comment, 
     if (index < line.length() && line[index] == '.') {
         isComment = true;
         comment = line.substr(index);
         return true;
     }
-    lineNumber = stoi(read_section(line, index));
-    address = stoul(read(line, index), nullptr, 16);
-    
-    string field = read_section(line,index);
-    if(field == ""){
-        block = -1;
-    }else{
-        block = stoi(field);
-    }
 
-    label = read_section(line, index);
-    opcode = read_section(line, index);
+    string addr = read_section(line, index);    //first section is address
+    if (addr.empty()) return false;
+
+    address = stoul(addr, nullptr, 16);
+
+    label = read_section(line, index);      //next section is label
+    if (label == "-") label = "";
+
+    opcode = read_section(line, index);     // next sections are opcode and operand
     operand = read_section(line, index);
+
+    
     
     if(index < line.length()){
         comment = line.substr(index);
@@ -157,7 +164,8 @@ bool read_IF(ifstream& filename, bool& isComment, int& lineNumber, int& address,
 
 }
 
-void read_non_space(string line, int& index, bool& status, string& data, bool toEnd=false){
+//helper function used to read files
+void read_non_space(string line, int& index, bool& status, string& data, bool toEnd){
     data = "";
     status = true;
     if(toEnd){
@@ -177,6 +185,7 @@ void read_non_space(string line, int& index, bool& status, string& data, bool to
     }
 }
 
+//helper function used to read files
 string read(string data, int& index){
     string x = "";
     while(index<data.length()&&isspace(data[index])){
@@ -189,6 +198,7 @@ string read(string data, int& index){
     return x;
 }
 
+//helper function used to read files
 void readOperand(string line, int& index, bool& status, string& data){
     data = "";
     status = true;
@@ -207,34 +217,51 @@ void readOperand(string line, int& index, bool& status, string& data){
     }
 }
 
-
 void loadSYMTAB(string filename) {
     size_t dot = filename.find_last_of('.');
-    if(dot == string::npos){
-         base = filename;
-    }else{
-         base = filename.substr(0, dot);
+    if (dot == string::npos) {
+        base = filename;
+    } else {
+        base = filename.substr(0, dot);
     }
-    ifstream symFile(base + ".st");
 
+    ifstream symFile(base + ".st");
     if (!symFile) {
         cout << "Unable to open SYMTAB file\n";
         return;
     }
 
     string line;
-    getline(symFile, line); // skip "SYMTAB:"
+    bool firstDataLine = true;
+
     while (getline(symFile, line)) {
+        if (line.empty()) continue;
+        if (line.find("Csect") != string::npos) continue;
+        if (line.find("----") != string::npos) continue;
+
         istringstream iss(line);
-        string symbol, arrow, value;
-        iss >> symbol >> arrow >> value;
-        if (!symbol.empty() && !value.empty()) {
+        vector<string> fields;
+        string temp;
+        while (iss >> temp) {
+            fields.push_back(temp);
+        }
+
+        if (fields.empty()) continue;
+
+        if (firstDataLine) {
+            firstDataLine = false;
+            continue;
+        }
+
+        if (fields.size() >= 2) {
+            string symbol = fields[0];
+            string value = fields[1];
             SYMTAB[symbol] = stoi(value, nullptr, 16);
         }
     }
 }
 
-
+//write listing file
 void writeL(ofstream& out, int lineNumber, int address, const string& label, const string& opcode, const string& operand, const string& objectCode, const string& comment, bool isCommentLine){
      if (isCommentLine) {
         out << "            " << comment << '\n';
@@ -328,7 +355,7 @@ string IS_Instruction(const string& opcode, const string& operand, int address) 
         return Format2(op, operand);
     }
 
-    if (is_Instruction(op)) {
+    if (isInstruction(op)) {
         return Format3AND4(op, operand, address);
     }
 
@@ -366,12 +393,11 @@ string Format2(const string& opcode, const string& operand) {
     int value = (opVal << 8) | (r1 << 4) | r2;
     return toHex(value, 4);
 }
-
 string Format3AND4(const string& opcode, const string& operand, int address) {
     string op = opcode;
     bool extended = false;
 
-    if (!op.empty() && op[0] == '+') {
+    if (!op.empty() && op[0] == '+') { // + indicates format 4
         extended = true;
         op = op.substr(1);
     }
@@ -385,35 +411,51 @@ string Format3AND4(const string& opcode, const string& operand, int address) {
     }
 
     string oper = trim(operand);
+    if (!oper.empty() && oper.back() == ',') {
+    oper.pop_back();
+    }
 
     bool n = true, i = true, x = false, b = false, p = false, e = extended;
+    int target = 0;
+    int disp = 0;
+    bool immediateConstant = false;
 
-    if (!oper.empty() && oper[0] == '#') {
+    if (!oper.empty() && oper[0] == '#') { //for immidiate addressing
         n = false;
         i = true;
         oper = oper.substr(1);
-    } else if (!oper.empty() && oper[0] == '@') {
+
+        if (!oper.empty() && isdigit(oper[0])) {
+            target = stoi(oper);
+            immediateConstant = true;
+        } else if (SYMTAB.find(oper) != SYMTAB.end()) {
+            target = SYMTAB[oper];
+        } else {
+            return "";
+        }
+    } else if (!oper.empty() && oper[0] == '@') {   //for indirect addressing
         n = true;
         i = false;
         oper = oper.substr(1);
     }
 
-    size_t comma = oper.find(",X");
+    size_t comma = oper.find(",X");     //for indexed addressing
     if (comma != string::npos) {
         x = true;
         oper = trim(oper.substr(0, comma));
     }
 
-    int target = 0;
-    bool immediateConstant = false;
+    
 
-    if (isNumber(oper)) {
-        target = stoi(oper);
-        immediateConstant = true;
-    } else if (SYMTAB.find(oper) != SYMTAB.end()) {
-        target = SYMTAB[oper];
-    } else {
-        return "";
+    if (!( !operand.empty() && (operand[0] == '#' || operand[0] == '@') )) {    //simple addressing (aka not @ or #)
+        if (isNumber(oper)) {
+            target = stoi(oper);
+            immediateConstant = true;
+        } else if (SYMTAB.find(oper) != SYMTAB.end()) {
+            target = SYMTAB[oper];
+        } else {
+            return "";
+        }
     }
 
     int opbyte = (OPTAB[op] & 0xFC);
@@ -421,6 +463,11 @@ string Format3AND4(const string& opcode, const string& operand, int address) {
     if (i) opbyte |= 0x01;
 
     if (extended) {
+        // immediate + format 4
+        if (!n && i) {
+        b = false;
+        p = false;
+        }
         int flags = 0;
         if (x) flags |= 0x8;
         if (b) flags |= 0x4;
@@ -431,8 +478,6 @@ string Format3AND4(const string& opcode, const string& operand, int address) {
         int value = (opbyte << 24) | (flags << 20) | addr20;
         return toHex(value, 8);
     }
-
-    int disp = 0;
 
     if (immediateConstant && !n && i) {
         if (target < 0 || target > 4095) return "";
