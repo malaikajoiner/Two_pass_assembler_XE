@@ -16,6 +16,8 @@ map<string, int> SYMTAB;
 ifstream IF;
 ofstream LF;
 
+int baseAddress = 0;
+
 string str_line, str_read, objectCode, curr_record, MR, base, label, operand, opcode, comment, operand1, operand2;;
 bool nobase;
 int TR_len, block, lineNumber, address, startAddress;
@@ -37,6 +39,7 @@ void pass2(string filename){
 
     LF.open(base+".l");     //opens a listing file for current input file
     if(!LF){ return; }
+
 
     objectCode = "";
     TR_len = 0;
@@ -68,18 +71,24 @@ void pass2(string filename){
         } else if (opcode == "WORD") {
             obj = IS_WORD(operand);
         } else if (opcode == "BYTE") {
-            obj = assembleBYTE(operand);
+            obj = IS_BYTE(operand);
         } else if (label == "*") {
-            obj = assembleLiteral(opcode);
+            obj = IS_Literal(opcode);
         } else {
-            obj = assembleInstruction(opcode, operand, address);
+            obj = IS_Instruction(opcode, operand, address);
         }
 
-        writeListingLine(LF, lineNumber, address, label, opcode, operand, obj, comment, false);
+        writeL(LF, lineNumber, address, label, opcode, operand, obj, comment, false);
     }
-        };
 
+    IF.close();
+    LF.close();
+};
 
+string toHex(int value, int width) {
+    stringstream ss;
+    ss << uppercase << hex << setw(width) << setfill('0') << value;
+    return ss.str();
 }
 
 string read_section(const string& section, int& index){                 //reads a section until parsed by white space
@@ -220,5 +229,68 @@ void loadSYMTAB(string filename) {
         if (!symbol.empty() && !value.empty()) {
             SYMTAB[symbol] = stoi(value, nullptr, 16);
         }
+    }
+}
+
+
+void writeL(ofstream& out, int lineNumber, int address, const string& label, const string& opcode, const string& operand, const string& objectCode, const string& comment, bool isCommentLine){
+     if (isCommentLine) {
+        out << "            " << comment << '\n';
+        return;
+    }
+
+    out << setw(4) << setfill(' ') << right << lineNumber << "  ";
+    out << setw(6) << setfill('0') << uppercase << hex << address << "  ";
+    out << left << setfill(' ') << setw(10) << label;
+    out << setw(10) << opcode;
+    out << setw(18) << operand;
+    out << "  " << objectCode;
+
+    if (!comment.empty()) {
+        out << "  " << comment;
+    }
+    out << '\n';
+
+    out << dec;
+
+}
+
+string IS_WORD(const string& operand) {
+    int value = stoi(operand);
+    return toHex(value & 0xFFFFFF, 6);
+}
+
+string IS_BYTE(const string& operand) {
+    if (operand.size() < 3) return "";
+
+    if (operand[0] == 'C' && operand[1] == '\'' && operand.back() == '\'') {
+        string chars = operand.substr(2, operand.size() - 3);
+        string result = "";
+        for (char c : chars) {
+            result += toHex((unsigned char)c, 2);
+        }
+        return result;
+    }
+
+    if (operand[0] == 'X' && operand[1] == '\'' && operand.back() == '\'') {
+        return operand.substr(2, operand.size() - 3);
+    }
+
+    return "";
+}
+
+string IS_Literal(const string& literal) {
+    if (literal.size() < 4 || literal[0] != '=') return "";
+
+    string body = literal.substr(1); // remove '='
+    return IS_BYTE(body);
+}
+
+void IS_BASE(const string& operand) {
+    if (SYMTAB.find(operand) != SYMTAB.end()) {
+        baseAddress = SYMTAB[operand];
+        nobase = false;
+    } else {
+        nobase = true;
     }
 }

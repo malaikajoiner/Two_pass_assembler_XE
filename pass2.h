@@ -18,6 +18,7 @@ This file declares the functions and constants used in pass2.cpp
 #include <cctype>
 #include <sstream>
 #include <map>
+#include <iomanip>
 using namespace std;
 
 extern map<string, int> SYMTAB;
@@ -27,7 +28,7 @@ extern ofstream LF;
 
 extern string str_line, objectCode, curr_record, MR, base, label, operand, opcode, comment, operand1, operand2;;
 extern bool nobase;
-extern int TR_len, block, lineNumber, address, startAddress;
+extern int TR_len, block, lineNumber, address, startAddress, baseAddress;
 extern bool isComment;
 
 void pass2(string filename);   //main function for calling pass 2 from main.cpp
@@ -43,6 +44,20 @@ void read_non_space(string line, int& index, bool& status, string& data, bool to
 string read(string data, int& index);
 
 void readOperand(string line, int& index, bool& status, string& data);
+
+string toHex(int value, int width);
+
+void writeL(ofstream& out, int lineNumber, int address, const string& label, const string& opcode, const string& operand, const string& objectCode, const string& comment, bool isCommentLine);
+
+string IS_WORD(const string& operand);
+
+string IS_BYTE(const string& operand);
+
+string IS_Literal(const string& literal);
+
+void IS_BASE(const string& operand);
+
+string IS_Instruction(const string& opcode, const string& operand, int address);
 
 #endif
 
