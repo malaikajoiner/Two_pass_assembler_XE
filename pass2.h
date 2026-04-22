@@ -12,6 +12,9 @@ This file declares the functions and constants used in pass2.cpp
 #ifndef PASS2_H
 #define PASS2_H
 
+#include <pass1.h>
+#include <vector>
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -19,9 +22,10 @@ This file declares the functions and constants used in pass2.cpp
 #include <sstream>
 #include <map>
 #include <iomanip>
+
 using namespace std;
 
-extern map<string, int> SYMTAB;
+extern map<string, int> SYMTAB, OPTAB, REGTAB;
 
 extern ifstream IF;
 extern ofstream LF;
@@ -58,6 +62,14 @@ string IS_Literal(const string& literal);
 void IS_BASE(const string& operand);
 
 string IS_Instruction(const string& opcode, const string& operand, int address);
+
+string Format2(const string& opcode, const string& operand);
+
+string Format3AND4(const string& opcode, const string& operand, int address);
+
+bool isNumber(const string& s);
+
+string trim(const string& s);
 
 #endif
 

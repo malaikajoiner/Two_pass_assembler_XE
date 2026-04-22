@@ -50,6 +50,7 @@ void pass2(string filename){
 
     write(LF, ".  SOURCE CODE FOR THE XE VERSION OF THE SIC FAMILY OF COMPUTER", true);
 
+    int listingline = 1;
     while(read_IF(IF, isComment, lineNumber, address, block, label, opcode, operand, comment)){
         string obj = "";
 
@@ -79,6 +80,7 @@ void pass2(string filename){
         }
 
         writeL(LF, lineNumber, address, label, opcode, operand, obj, comment, false);
+        listingline++;
     }
 
     IF.close();
@@ -294,3 +296,244 @@ void IS_BASE(const string& operand) {
         nobase = true;
     }
 }
+
+string trim(const string& s) {
+    size_t start = s.find_first_not_of(" \t");
+    if (start == string::npos) return "";
+    size_t end = s.find_last_not_of(" \t");
+    return s.substr(start, end - start + 1);
+}
+
+bool isNumber(const string& s) {
+    if (s.empty()) return false;
+    for (char c : s) {
+        if (!isdigit(static_cast<unsigned char>(c)) && c != '-') return false;
+    }
+    return true;
+}
+
+string IS_Instruction(const string& opcode, const string& operand, int address) {
+    string op = opcode;
+
+    if (!op.empty() && op[0] == '+') {
+        return Format3AND4(op, operand, address);
+    }
+
+    if (isFormat1(op)) {
+        if (OPTAB.find(op) == OPTAB.end()) return "";
+        return toHex(OPTAB[op], 2);
+    }
+
+    if (isFormat2(op)) {
+        return Format2(op, operand);
+    }
+
+    if (is_Instruction(op)) {
+        return Format3AND4(op, operand, address);
+    }
+
+    return "";
+}
+
+string Format2(const string& opcode, const string& operand) {
+    if (OPTAB.find(opcode) == OPTAB.end()) return "";
+
+    int opVal = OPTAB[opcode];
+    int r1 = 0;
+    int r2 = 0;
+
+    string first = operand;
+    string second = "";
+
+    size_t comma = operand.find(',');
+    if (comma != string::npos) {
+        first = trim(operand.substr(0, comma));
+        second = trim(operand.substr(comma + 1));
+    }
+
+    if (!first.empty()) {
+        if (REGTAB.find(first) != REGTAB.end()) r1 = REGTAB[first];
+        else if (isNumber(first)) r1 = stoi(first);
+        else return "";
+    }
+
+    if (!second.empty()) {
+        if (REGTAB.find(second) != REGTAB.end()) r2 = REGTAB[second];
+        else if (isNumber(second)) r2 = stoi(second);
+        else return "";
+    }
+
+    int value = (opVal << 8) | (r1 << 4) | r2;
+    return toHex(value, 4);
+}
+
+string Format3AND4(const string& opcode, const string& operand, int address) {
+    string op = opcode;
+    bool extended = false;
+
+    if (!op.empty() && op[0] == '+') {
+        extended = true;
+        op = op.substr(1);
+    }
+
+    if (OPTAB.find(op) == OPTAB.end()) return "";
+
+    if (op == "RSUB") {
+        int opbyte = (OPTAB[op] & 0xFC) | 0x03;
+        int value = (opbyte << 16);
+        return toHex(value, 6);
+    }
+
+    string oper = trim(operand);
+
+    bool n = true, i = true, x = false, b = false, p = false, e = extended;
+
+    if (!oper.empty() && oper[0] == '#') {
+        n = false;
+        i = true;
+        oper = oper.substr(1);
+    } else if (!oper.empty() && oper[0] == '@') {
+        n = true;
+        i = false;
+        oper = oper.substr(1);
+    }
+
+    size_t comma = oper.find(",X");
+    if (comma != string::npos) {
+        x = true;
+        oper = trim(oper.substr(0, comma));
+    }
+
+    int target = 0;
+    bool immediateConstant = false;
+
+    if (isNumber(oper)) {
+        target = stoi(oper);
+        immediateConstant = true;
+    } else if (SYMTAB.find(oper) != SYMTAB.end()) {
+        target = SYMTAB[oper];
+    } else {
+        return "";
+    }
+
+    int opbyte = (OPTAB[op] & 0xFC);
+    if (n) opbyte |= 0x02;
+    if (i) opbyte |= 0x01;
+
+    if (extended) {
+        int flags = 0;
+        if (x) flags |= 0x8;
+        if (b) flags |= 0x4;
+        if (p) flags |= 0x2;
+        if (e) flags |= 0x1;
+
+        int addr20 = target & 0xFFFFF;
+        int value = (opbyte << 24) | (flags << 20) | addr20;
+        return toHex(value, 8);
+    }
+
+    int disp = 0;
+
+    if (immediateConstant && !n && i) {
+        if (target < 0 || target > 4095) return "";
+        disp = target;
+        b = false;
+        p = false;
+    } else {
+        int nextAddress = address + 3;
+        int pcDisp = target - nextAddress;
+
+        if (pcDisp >= -2048 && pcDisp <= 2047) {
+            disp = pcDisp & 0xFFF;
+            p = true;
+            b = false;
+        } else if (!nobase) {
+            int baseDisp = target - baseAddress;
+            if (baseDisp >= 0 && baseDisp <= 4095) {
+                disp = baseDisp;
+                b = true;
+                p = false;
+            } else {
+                return "";
+            }
+        } else {
+            return "";
+        }
+    }
+
+    int flags = 0;
+    if (x) flags |= 0x8;
+    if (b) flags |= 0x4;
+    if (p) flags |= 0x2;
+    if (e) flags |= 0x1;
+
+    int value = (opbyte << 16) | (flags << 12) | (disp & 0xFFF);
+    return toHex(value, 6);
+}
+
+map<string, int> OPTAB = {
+    {"ADD", 0x18}, 
+    {"ADDF", 0x58}, 
+    {"ADDR", 0x90}, 
+    {"AND", 0x40},
+    {"CLEAR", 0xB4}, 
+    {"COMP", 0x28},
+    {"COMPF", 0x88}, 
+    {"COMPR", 0xA0}, 
+    {"DIV", 0x24},
+    {"DIVF", 0x64}, 
+    {"DIVR", 0x9C}, 
+    {"FIX", 0xC4},
+    {"FLOAT", 0xC0}, 
+    {"HIO", 0xF4}, 
+    {"J", 0x3C},
+    {"JEQ", 0x30}, 
+    {"JGT", 0x34}, 
+    {"JLT", 0x38},
+    {"JSUB", 0x48}, 
+    {"LDA", 0x00}, 
+    {"LDB", 0x68},
+    {"LDCH", 0x50}, 
+    {"LDF", 0x70}, 
+    {"LDL", 0x08},
+    {"LDS", 0x6C}, 
+    {"LDT", 0x74}, 
+    {"LDX", 0x04},
+    {"LPS", 0xD0}, 
+    {"MUL", 0x20}, 
+    {"MULF", 0x60},
+    {"MULR", 0x98}, 
+    {"NORM", 0xC8}, 
+    {"OR", 0x44},
+    {"RD", 0xD8}, 
+    {"RMO", 0xAC}, 
+    {"RSUB", 0x4C},
+    {"SHIFTL", 0xA4}, 
+    {"SHIFTR", 0xA8}, 
+    {"SIO", 0xF0},
+    {"SSK", 0xEC}, 
+    {"STA", 0x0C}, 
+    {"STB", 0x78},
+    {"STCH", 0x54}, 
+    {"STF", 0x80}, 
+    {"STI", 0xD4},
+    {"STL", 0x14}, 
+    {"STS", 0x7C}, 
+    {"STSW", 0xE8},
+    {"STT", 0x84}, 
+    {"STX", 0x10}, 
+    {"SUB", 0x1C},
+    {"SUBF", 0x5C}, 
+    {"SUBR", 0x94}, 
+    {"SVC", 0xB0},
+    {"TD", 0xE0}, 
+    {"TIO", 0xF8}, 
+    {"TIX", 0x2C},
+    {"TIXR", 0xB8}, 
+    {"WD", 0xDC}
+};
+
+map<string, int> REGTAB = {
+    {"A", 0}, {"X", 1}, {"L", 2}, {"B", 3},
+    {"S", 4}, {"T", 5}, {"F", 6}, {"PC", 8}, {"SW", 9}
+};
