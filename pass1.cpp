@@ -12,6 +12,7 @@ This file is the pass 1 cpp file
 #include <sstream>
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 using namespace std;
 
 
@@ -153,11 +154,11 @@ void pass1(string filename) {
                 locctr += 1;
             } else if (isFormat2(opcode)) {
                 locctr += 2;
-            } else if (!opcode.empty() && opcode[0] == '='){
-                if (!operand.empty() && operand[0] == 'C'){
-                    locctr += operand.length() - 4;
-                } else if (!operand.empty() && operand[0] == 'X'){
-                    locctr += (operand.length()- 4) /2;
+            } else if (!opcode.empty() && opcode[0] == '=') {
+                if (opcode.size() > 3 && opcode[1] == 'C') {
+                    locctr += opcode.length() - 4;
+                } else if (opcode.size() > 3 && opcode[1] == 'X') {
+                    locctr += (opcode.length() - 4) / 2;
                 } else {
                     cout << "Invalid literal: " << opcode << endl;
                 }
@@ -211,21 +212,32 @@ void pass1(string filename) {
     }
 
     intermediate.close();
-    
+
 
 // length
     int programLength = locctr - startAddress;
     cout << "Program length: " << hex << programLength << endl;
     cout << dec;
 // open outputfile
-    if (outFile.is_open()) {
-        outFile << "SYMTAB:" << endl;
-        for (auto &pair: SYMTAB) {
-            outFile << pair.first << " -> " << hex << uppercase << pair.second << endl;
-        }
-        outFile.close();
-    } else{
-        cout << "Unable to open file for SYMTAB" << endl;
+    outFile << "Csect   Symbol   Value   LENGTH   Flags:\n";
+    outFile << "----------------------------------------\n";
+
+// control section line (you can just use PROG)
+    outFile << left << setw(8) << "PROG"
+            << setw(8) << ""
+            << uppercase << hex << setw(6) << setfill('0') << startAddress
+            << " "
+            << setw(6) << programLength
+            << setfill(' ')
+            << "\n";
+
+// symbol rows
+    for (auto &pair : SYMTAB) {
+        outFile << left << setw(8) << ""
+                << setw(8) << pair.first
+                << uppercase << hex << setw(6) << setfill('0') << pair.second
+                << setfill(' ')
+                << "      \n";
     }
 
 /*    cout << "SYMTAB:" << endl;
