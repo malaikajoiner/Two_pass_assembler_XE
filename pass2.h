@@ -9,39 +9,42 @@ File Description:
 This file declares the functions and constants used in pass2.cpp
 ************************************************/
 
+#ifndef PASS2_H
+#define PASS2_H
+
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <cctype>
+#include <sstream>
+#include <map>
 using namespace std;
 
-ifstream IF;                    //reads intermediate file 
-ofstream LF, SYMTAB;            //creates output files (Listing file and Symbol Table)
+extern map<string, int> SYMTAB;
 
-string str_line;                //temp string for reading whole line
-string str_read;                //temp string for reading a section
+extern ifstream IF;
+extern ofstream LF;
 
-string objectCode;                 
-int TR_len;                      //text record length
-string curr_record;              //current text record
-string MR;                      //Modification record
-bool nobase;
-int block = 0;
+extern string str_line, objectCode, curr_record, MR, base, label, operand, opcode, comment, operand1, operand2;;
+extern bool nobase;
+extern int TR_len, block, lineNumber, address, startAddress;
+extern bool isComment;
 
-void pass2(string filename){}   //main function for calling pass 2 from main.cpp
+void pass2(string filename);   //main function for calling pass 2 from main.cpp
 
-void write(ofstream& filename, string text, bool nextLine){} //writes text to given file
+void write(ofstream& filename, string text, bool nextLine); //writes text to given file
 
-string read_section(const string& section, int& index){}
+string read_section(const string& section, int& index);
 
-bool read_IF(ifstream& filename, bool& isComment, int& lineNumber, int& address, int& block, string& label, string& opcode, string& operand, string& comment){
-    string file = "";
-    string buffer = ""
-}
+bool read_IF(ifstream& filename, bool& isComment, int& lineNumber, int& address, int& block, string& label, string& opcode, string& operand, string& comment);
 
+void read_non_space(string line, int& index, bool& status, string& data, bool toEnd=false);
 
+string read(string data, int& index);
 
+void readOperand(string line, int& index, bool& status, string& data);
 
+#endif
 
 
 

@@ -4,9 +4,6 @@ Assignment: Assignment 2, SIC/XE 2 pass assembler
 Class: CS530, Spring 2026
 Malaika Joiner cssc2527
 Ryoka Kobayashi cssc2530
-
-File Description: 
-This file contains the documentation and overall description of the program
 ************************************************/
 
 Program description: 
